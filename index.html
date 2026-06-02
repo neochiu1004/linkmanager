@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="default" name="apple-mobile-web-app-status-bar-style"/>
+<title>LinkManager</title>
+<!-- STREAMING_CHUNK: 載入 Tailwind CSS 與 Google 字型 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#4c4aca",
+                        "surface-container-highest": "#e3e2e7",
+                        "on-tertiary-fixed-variant": "#7c2e00",
+                        "on-background": "#1a1b1f",
+                        "outline-variant": "#c1c6d7",
+                        "surface-container-high": "#e9e7ed",
+                        "surface-bright": "#faf9fe",
+                        "tertiary-fixed": "#ffdbcc",
+                        "surface-dim": "#dad9df",
+                        "on-secondary-fixed": "#0c006a",
+                        "primary-container": "#0070eb",
+                        "primary-fixed-dim": "#adc6ff",
+                        "tertiary-container": "#c64f00",
+                        "tertiary": "#9e3d00",
+                        "on-primary-fixed": "#001a41",
+                        "on-error-container": "#93000a",
+                        "on-primary-container": "#fefcff",
+                        "error-container": "#ffdad6",
+                        "inverse-primary": "#adc6ff",
+                        "secondary-fixed-dim": "#c2c1ff",
+                        "surface-tint": "#005bc1",
+                        "secondary-fixed": "#e2dfff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed-variant": "#3631b4",
+                        "on-surface": "#1a1b1f",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#d8e2ff",
+                        "surface-container-low": "#f4f3f8",
+                        "secondary-container": "#6664e4",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#fffbff",
+                        "primary": "#0058bc",
+                        "background": "#faf9fe",
+                        "on-tertiary-fixed": "#351000",
+                        "inverse-surface": "#2f3034",
+                        "surface-variant": "#e3e2e7",
+                        "outline": "#717786",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#004493",
+                        "surface": "#faf9fe",
+                        "on-tertiary-container": "#fffbff",
+                        "on-tertiary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#414755",
+                        "inverse-on-surface": "#f1f0f5",
+                        "surface-container": "#eeedf3",
+                        "tertiary-fixed-dim": "#ffb595"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter-list": "12px",
+                        "stack-gap": "8px",
+                        "safe-area-bottom": "34px",
+                        "margin-page": "16px"
+                    },
+                    "fontFamily": {
+                        "subheadline": ["Inter"],
+                        "body": ["Inter"],
+                        "caption-sm": ["Inter"],
+                        "nav-title": ["Inter"],
+                        "large-title": ["Inter"],
+                        "footnote": ["Inter"],
+                        "headline": ["Inter"],
+                        "callout": ["Inter"]
+                    },
+                    "fontSize": {
+                        "subheadline": ["15px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body": ["17px", {"lineHeight": "22px", "fontWeight": "400"}],
+                        "caption-sm": ["11px", {"lineHeight": "13px", "fontWeight": "400"}],
+                        "nav-title": ["17px", {"lineHeight": "22px", "fontWeight": "600"}],
+                        "large-title": ["34px", {"lineHeight": "41px", "fontWeight": "700"}],
+                        "footnote": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "headline": ["17px", {"lineHeight": "22px", "fontWeight": "600"}],
+                        "callout": ["16px", {"lineHeight": "21px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<!-- STREAMING_CHUNK: 設定自訂 iOS 基礎樣式 -->
+<style>
+        body {
+            background-color: #F2F2F7;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            scroll-behavior: smooth;
+        }
+        .ios-blur {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .inset-grouped-card {
+            background-color: #FFFFFF;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+        .active-scale:active {
+            transform: scale(0.98);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface">
+<!-- STREAMING_CHUNK: 渲染導覽列與離線狀態條 -->
+<!-- TopAppBar -->
+<header class="bg-surface/90 backdrop-blur-xl border-b border-outline-variant/30 docked full-width top-0 sticky z-50 flex justify-between items-center px-margin-page h-11 w-full">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="link">link</span>
+<h1 class="font-headline text-headline text-primary">LinkManager</h1>
+</div>
+<button class="hover:opacity-80 transition-opacity active:scale-95 transition-transform duration-150" id="manual-sync-btn">
+<span class="material-symbols-outlined text-primary" data-icon="sync">sync</span>
+</button>
+</header>
+<!-- Offline Alert -->
+<div class="bg-primary text-on-primary px-4 py-2 flex items-center justify-between transition-all duration-300" id="offline-banner">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" id="offline-icon" data-icon="cloud_done">cloud_done</span>
+<span class="font-footnote text-footnote" id="offline-text">Ready for offline use</span>
+</div>
+<button class="material-symbols-outlined text-[18px]" data-icon="close" onclick="this.parentElement.style.display='none'">close</button>
+</div>
+<!-- STREAMING_CHUNK: 主要卡片展示區塊與動態分類 Tabs -->
+<main class="max-w-[640px] mx-auto pb-28">
+<!-- Large Title Hero -->
+<section class="px-margin-page pt-8 pb-4" id="hero-section">
+<h2 class="font-large-title text-large-title text-on-surface">Dashboard</h2>
+<p class="font-subheadline text-subheadline text-on-surface-variant">Manage your quick links and tasks.</p>
+</section>
+<!-- Category Selector (Floating / Anchored Header) -->
+<div class="sticky top-11 bg-[#F2F2F7]/95 backdrop-blur-md z-40 flex gap-2 overflow-x-auto px-margin-page py-3 hide-scrollbar border-b border-outline-variant/10" id="category-tab-container">
+<!-- 由 JavaScript 動態生成 Tab 分類按鈕 -->
+</div>
+<!-- Main Content Grid -->
+<div class="px-margin-page space-y-4 pt-4" id="dynamic-card-container">
+<!-- 所有卡片將在此處垂直排列並由 JS 動態生成 -->
+</div>
+</main>
+<!-- STREAMING_CHUNK: 重置底部導覽列（移除了多餘的 Categories） -->
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 right-0 max-w-[640px] mx-auto flex justify-around items-center pt-2 pb-safe-area-bottom px-4 bg-surface/90 backdrop-blur-xl border-t border-outline-variant/30 z-50 rounded-t-xl shadow-lg">
+<button id="nav-home" class="flex flex-col items-center justify-center text-primary font-semibold font-caption-sm text-caption-sm transition-colors active:scale-98">
+<span class="material-symbols-outlined" data-icon="home" data-weight="fill">home</span>
+<span>Home</span>
+</button>
+<button id="nav-settings" class="flex flex-col items-center justify-center text-on-surface-variant font-caption-sm text-caption-sm transition-colors active:scale-98">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</button>
+</nav>
+
+<!-- STREAMING_CHUNK: 建立 iOS 風格設定抽屜 Modal -->
+<!-- Settings Drawer Modal (iOS Style Drawer) -->
+<div id="settings-modal" class="fixed inset-0 z-[100] flex items-end justify-center hidden">
+<div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 opacity-0" id="modal-overlay"></div>
+<div class="relative bg-white dark:bg-zinc-900 w-full max-w-[640px] rounded-t-2xl p-6 pb-10 shadow-2xl transition-transform duration-300 translate-y-full z-10" id="modal-container">
+<div class="w-12 h-1 bg-surface-container-highest rounded-full mx-auto mb-6"></div>
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline text-headline text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="settings">settings</span> LinkManager 設定
+</h3>
+<button class="material-symbols-outlined text-outline" data-icon="close" onclick="toggleSettingsModal(false)">close</button>
+</div>
+<div class="space-y-4 text-left">
+<!-- 新增分類按鈕區塊 -->
+<div class="p-4 bg-surface-container-low rounded-xl">
+<p class="font-subheadline font-semibold text-on-surface mb-1">分類管理</p>
+<p class="font-footnote text-on-surface-variant mb-3">自由增加新的自定義分類，打造您專屬的行動儀表板。</p>
+<button onclick="handleAddNewCategory()" class="w-full py-2.5 bg-primary text-on-primary font-subheadline rounded-lg active-scale transition-colors flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[20px]" data-icon="add_circle">add_circle</span> 新增自定義分類
+</button>
+</div>
+<!-- 資料重置區塊 -->
+<div class="p-4 bg-surface-container-low rounded-xl">
+<p class="font-subheadline font-semibold text-on-surface mb-1">資料儲存與重置</p>
+<p class="font-footnote text-on-surface-variant mb-3">所有自定義分類、網址與欄位名稱均離線儲存於您的本地裝置中。</p>
+<button onclick="clearAllData()" class="w-full py-2.5 bg-error text-on-error font-subheadline rounded-lg active-scale transition-colors">清除所有資料並還原預設</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- STREAMING_CHUNK: 建立自定義分類編輯器 Modal -->
+<!-- Edit Category Bottom Drawer Modal (iOS Style Category Editor) -->
+<div id="edit-modal" class="fixed inset-0 z-[110] flex items-end justify-center hidden">
+<div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 opacity-0" id="edit-overlay"></div>
+<div class="relative bg-white dark:bg-zinc-900 w-full max-w-[640px] rounded-t-2xl p-6 pb-10 shadow-2xl transition-transform duration-300 translate-y-full z-10" id="edit-container">
+<div class="w-12 h-1 bg-surface-container-highest rounded-full mx-auto mb-6"></div>
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline text-headline text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="edit">edit</span> 編輯自定義分類
+</h3>
+<button class="material-symbols-outlined text-outline" data-icon="close" onclick="toggleEditModal(false)">close</button>
+</div>
+<div class="space-y-4 text-left">
+<!-- 分類名稱輸入 -->
+<div>
+<label class="block text-footnote text-on-surface-variant mb-1 font-semibold">分類名稱</label>
+<input type="text" id="edit-cat-name" class="w-full px-3 py-2 bg-surface-container-low border border-outline-variant/50 rounded-lg text-on-surface focus:outline-none focus:border-primary transition-colors font-subheadline" placeholder="例如：Category A">
+</div>
+<!-- 簽到自定義欄位名稱輸入 -->
+<div>
+<label class="block text-footnote text-on-surface-variant mb-1 font-semibold">簽到區塊自定義標題</label>
+<input type="text" id="edit-cat-signin-label" class="w-full px-3 py-2 bg-surface-container-low border border-outline-variant/50 rounded-lg text-on-surface focus:outline-none focus:border-primary transition-colors font-subheadline" placeholder="例如：簽到 (Sign-in)">
+</div>
+<!-- 轉盤自定義欄位名稱輸入 -->
+<div>
+<label class="block text-footnote text-on-surface-variant mb-1 font-semibold">轉盤區塊自定義標題</label>
+<input type="text" id="edit-cat-spin-label" class="w-full px-3 py-2 bg-surface-container-low border border-outline-variant/50 rounded-lg text-on-surface focus:outline-none focus:border-secondary transition-colors font-subheadline" placeholder="例如：轉盤 (Spin)">
+</div>
+<!-- 操作按鈕群組 -->
+<div class="grid grid-cols-2 gap-4 pt-2">
+<button onclick="handleDeleteCategory()" class="py-2.5 bg-error text-on-error font-subheadline rounded-lg active-scale transition-colors flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span> 刪除分類
+</button>
+<button onclick="handleSaveCategory()" class="py-2.5 bg-primary text-on-primary font-subheadline rounded-lg active-scale transition-colors flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[18px]" data-icon="save">save</span> 儲存設定
+</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- STREAMING_CHUNK: 建立替代內建 alert / confirm 的精美 iOS 對話框 -->
+<!-- Custom iOS Dialog Modal -->
+<div id="custom-dialog" class="fixed inset-0 z-[200] flex items-center justify-center hidden">
+<div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-200 opacity-0" id="dialog-overlay"></div>
+<div class="relative bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg rounded-2xl w-72 p-5 text-center shadow-2xl scale-95 opacity-0 transition-all duration-200 z-10" id="dialog-content">
+<h4 class="font-headline text-headline text-on-surface mb-2" id="dialog-title">提示</h4>
+<p class="font-footnote text-footnote text-on-surface-variant mb-6 whitespace-pre-line" id="dialog-message">訊息內容</p>
+<div class="flex border-t border-outline-variant/30 -mx-5 -mb-5 h-11" id="dialog-buttons">
+<!-- 按鈕會由 JavaScript 動態寫入 -->
+</div>
+</div>
+</div>
+
+<!-- STREAMING_CHUNK: 資料管理、智慧剪貼簿、ScrollSpy、與渲染邏輯 -->
+<script>
+        // ==========================================
+        // 1. 資料持久化與動態模型管理器
+        // ==========================================
+        const STORAGE_KEY = 'link_manager_data_v2'; // 升級為 v2 格式以支援自定義架構
+        
+        // 預設資料集（五個預設分類與預設欄位名稱）
+        const defaultCategories = [
+            { id: "cat-A", name: "Category A", signinLabel: "簽到 (Sign-in)", signinUrl: "", spinLabel: "轉盤 (Spin)", spinUrl: "" },
+            { id: "cat-B", name: "Category B", signinLabel: "簽到 (Sign-in)", signinUrl: "", spinLabel: "轉盤 (Spin)", spinUrl: "" },
+            { id: "cat-C", name: "Category C", signinLabel: "簽到 (Sign-in)", signinUrl: "", spinLabel: "轉盤 (Spin)", spinUrl: "" },
+            { id: "cat-D", name: "Category D", signinLabel: "簽到 (Sign-in)", signinUrl: "", spinLabel: "轉盤 (Spin)", spinUrl: "" },
+            { id: "cat-E", name: "Category E", signinLabel: "簽到 (Sign-in)", signinUrl: "", spinLabel: "轉盤 (Spin)", spinUrl: "" }
+        ];
+
+        let appState = {
+            categories: []
+        };
+        let currentEditingId = null; // 當前正在編輯的分類 ID
+
+        // ==========================================
+        // 自定義 iOS 精美對話框輔助函數 (完美取代內建 alert 與 confirm)
+        // ==========================================
+        function showCustomAlert(title, message) {
+            const dialog = document.getElementById('custom-dialog');
+            const overlay = document.getElementById('dialog-overlay');
+            const content = document.getElementById('dialog-content');
+            
+            document.getElementById('dialog-title').innerText = title;
+            document.getElementById('dialog-message').innerText = message;
+            
+            const btnContainer = document.getElementById('dialog-buttons');
+            btnContainer.innerHTML = `
+                <button onclick="closeCustomDialog()" class="flex-1 text-primary font-semibold text-subheadline py-2 hover:bg-surface-container-low transition-colors rounded-b-2xl outline-none focus:outline-none">
+                    確認
+                </button>
+            `;
+            
+            dialog.classList.remove('hidden');
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                overlay.classList.add('opacity-100');
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function showCustomConfirm(title, message, onConfirm) {
+            const dialog = document.getElementById('custom-dialog');
+            const overlay = document.getElementById('dialog-overlay');
+            const content = document.getElementById('dialog-content');
+            
+            document.getElementById('dialog-title').innerText = title;
+            document.getElementById('dialog-message').innerText = message;
+            
+            const btnContainer = document.getElementById('dialog-buttons');
+            btnContainer.innerHTML = `
+                <button onclick="closeCustomDialog()" class="flex-1 text-on-surface-variant font-medium text-subheadline py-2 border-r border-outline-variant/30 hover:bg-surface-container-low transition-colors outline-none focus:outline-none">
+                    取消
+                </button>
+                <button id="custom-dialog-confirm-btn" class="flex-1 text-error font-semibold text-subheadline py-2 hover:bg-surface-container-low transition-colors outline-none focus:outline-none">
+                    確認
+                </button>
+            `;
+            
+            document.getElementById('custom-dialog-confirm-btn').onclick = () => {
+                closeCustomDialog();
+                if (onConfirm) onConfirm();
+            };
+
+            dialog.classList.remove('hidden');
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                overlay.classList.add('opacity-100');
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeCustomDialog() {
+            const dialog = document.getElementById('custom-dialog');
+            const overlay = document.getElementById('dialog-overlay');
+            const content = document.getElementById('dialog-content');
+
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            overlay.classList.remove('opacity-100');
+            overlay.classList.add('opacity-0');
+            
+            setTimeout(() => {
+                dialog.classList.add('hidden');
+            }, 200);
+        }
+
+        function initStorage() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    appState.categories = JSON.parse(stored);
+                } catch (e) {
+                    console.error('儲存格式解析失敗，已還原為預設架構。', e);
+                    appState.categories = JSON.parse(JSON.stringify(defaultCategories));
+                    saveStorage();
+                }
+            } else {
+                // 檢查是否含有舊版 A~E 欄位資料 (v1)，並進行無縫升級轉移
+                const v1Data = localStorage.getItem('link_manager_data');
+                if (v1Data) {
+                    try {
+                        const parsedV1 = JSON.parse(v1Data);
+                        appState.categories = JSON.parse(JSON.stringify(defaultCategories));
+                        // 對比轉移
+                        appState.categories.forEach(cat => {
+                            const simpleKey = cat.name.split(' ').pop(); // 'A', 'B' ...
+                            if (parsedV1[simpleKey]) {
+                                cat.signinUrl = parsedV1[simpleKey].signin || '';
+                                cat.spinUrl = parsedV1[simpleKey].spin || '';
+                            }
+                        });
+                        console.log('[PWA] 舊版 LocalStorage 資料已無縫轉換至全新客製化系統！');
+                        saveStorage();
+                        localStorage.removeItem('link_manager_data'); // 清除舊版格式
+                    } catch (e) {
+                        appState.categories = JSON.parse(JSON.stringify(defaultCategories));
+                        saveStorage();
+                    }
+                } else {
+                    appState.categories = JSON.parse(JSON.stringify(defaultCategories));
+                    saveStorage();
+                }
+            }
+        }
+
+        function saveStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState.categories));
+        }
+
+        function clearAllData() {
+            showCustomConfirm('確認重置資料嗎？', '確定要清除所有分類設定，並恢復至預設 Category A~E 狀態嗎？此動作將無法復原。', () => {
+                appState.categories = JSON.parse(JSON.stringify(defaultCategories));
+                saveStorage();
+                renderAllTabs();
+                renderAllCards();
+                toggleSettingsModal(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
+
+        // ==========================================
+        // 2. 智慧剪貼簿與動作管理器 (Actions & Clipboard)
+        // ==========================================
+        async function handlePaste(catId, type) {
+            let pastedText = '';
+
+            try {
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    pastedText = await navigator.clipboard.readText();
+                } else {
+                    throw new Error('Clipboard API not available');
+                }
+            } catch (err) {
+                console.warn('無法直接讀取剪貼簿，轉向普通輸入模式：', err);
+                const targetCat = appState.categories.find(c => c.id === catId);
+                const currentVal = targetCat ? (type === 'signin' ? targetCat.signinUrl : targetCat.spinUrl) : '';
+                pastedText = prompt(`請在此處貼上或輸入新連結網址：`, currentVal);
+            }
+
+            if (pastedText !== null) {
+                let trimmed = pastedText.trim();
+                if (trimmed) {
+                    if (!/^https?:\/\//i.test(trimmed)) {
+                        trimmed = 'https://' + trimmed;
+                    }
+                    
+                    const catIndex = appState.categories.findIndex(c => c.id === catId);
+                    if (catIndex !== -1) {
+                        if (type === 'signin') {
+                            appState.categories[catIndex].signinUrl = trimmed;
+                        } else {
+                            appState.categories[catIndex].spinUrl = trimmed;
+                        }
+                        saveStorage();
+                        renderAllCards();
+                        
+                        // 微互動：貼上成功的回饋動畫效果
+                        const btnId = `paste-${catId}-${type}`;
+                        const btn = document.getElementById(btnId);
+                        if (btn) {
+                            const originalHtml = btn.innerHTML;
+                            btn.innerHTML = `<span class="material-symbols-outlined text-[18px]" data-icon="check">check</span> 已儲存`;
+                            setTimeout(() => { btn.innerHTML = originalHtml; }, 1500);
+                        }
+                    }
+                }
+            }
+        }
+
+        function handleGo(catId, type) {
+            const targetCat = appState.categories.find(c => c.id === catId);
+            if (!targetCat) return;
+
+            const url = type === 'signin' ? targetCat.signinUrl : targetCat.spinUrl;
+            const labelName = type === 'signin' ? targetCat.signinLabel : targetCat.spinLabel;
+
+            if (url && /^https?:\/\//i.test(url)) {
+                window.open(url, '_blank');
+            } else {
+                showCustomAlert('提示', `請先點擊「貼上連結」配置分類 [${targetCat.name}] 的 [${labelName}] 目標網址。`);
+            }
+        }
+
+        // ==========================================
+        // 3. 全卡片串流與 Tab 導覽渲染引擎
+        // ==========================================
+        function renderAllTabs() {
+            const tabContainer = document.getElementById('category-tab-container');
+            if (!tabContainer) return;
+
+            tabContainer.innerHTML = '';
+            appState.categories.forEach((cat, index) => {
+                const btnClass = index === 0 
+                    ? "bg-primary text-on-primary font-subheadline text-subheadline px-6 py-2 rounded-full whitespace-nowrap active-scale transition-all duration-300" 
+                    : "bg-surface-container-high text-on-surface-variant font-subheadline text-subheadline px-6 py-2 rounded-full whitespace-nowrap active-scale transition-all duration-300";
+                
+                const btn = document.createElement('button');
+                btn.setAttribute('data-cat', cat.id);
+                btn.className = btnClass;
+                btn.innerText = cat.name;
+
+                // 綁定點擊平滑滾動至對應卡片
+                btn.addEventListener('click', () => {
+                    const targetCard = document.getElementById(`card-${cat.id}`);
+                    if (targetCard) {
+                        isProgrammaticScrolling = true;
+                        clearTimeout(scrollTimeout);
+                        
+                        // 主動切換選定 UI
+                        setActiveTabUI(cat.id);
+                        
+                        const yOffset = -100; 
+                        const y = targetCard.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                        
+                        window.scrollTo({ top: y, behavior: 'smooth' });
+
+                        scrollTimeout = setTimeout(() => {
+                            isProgrammaticScrolling = false;
+                        }, 800);
+                    }
+                });
+
+                tabContainer.appendChild(btn);
+            });
+        }
+
+        function renderAllCards() {
+            const container = document.getElementById('dynamic-card-container');
+            if (!container) return;
+
+            container.innerHTML = ''; // 清空
+
+            appState.categories.forEach(cat => {
+                const cardHtml = `
+                <div id="card-${cat.id}" data-category="${cat.id}" class="inset-grouped-card shadow-sm overflow-hidden border border-outline-variant/10 transition-all duration-300">
+                    <div class="px-4 py-3 border-b border-outline-variant/10 bg-surface-container-lowest flex justify-between items-center">
+                        <h3 class="font-headline text-headline text-on-surface">${cat.name}</h3>
+                        <button onclick="openCategoryEditor('${cat.id}')" class="material-symbols-outlined text-outline hover:text-primary transition-colors p-1 outline-none focus:outline-none" data-icon="more_horiz">more_horiz</button>
+                    </div>
+                    
+                    <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Section 簽到自定義 -->
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-2 text-primary">
+                                <span class="material-symbols-outlined text-[20px]" data-icon="how_to_reg">how_to_reg</span>
+                                <span class="font-subheadline font-semibold text-subheadline">${cat.signinLabel || '簽到 (Sign-in)'}</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button id="paste-${cat.id}-signin" onclick="handlePaste('${cat.id}', 'signin')" class="flex-1 bg-surface-container-low text-primary font-subheadline text-subheadline py-2.5 rounded-lg border border-primary/10 active-scale flex items-center justify-center gap-1 transition-all outline-none focus:outline-none">
+                                    <span class="material-symbols-outlined text-[18px]" data-icon="content_paste">content_paste</span>
+                                    ${cat.signinUrl ? '更新連結' : '貼上連結'}
+                                </button>
+                                <button onclick="handleGo('${cat.id}', 'signin')" class="flex-1 ${cat.signinUrl ? 'bg-primary' : 'bg-primary/50 cursor-not-allowed'} text-on-primary font-subheadline text-subheadline py-2.5 rounded-lg active-scale flex items-center justify-center gap-1 shadow-sm transition-colors outline-none focus:outline-none">
+                                    <span class="material-symbols-outlined text-[18px]" data-icon="open_in_new">open_in_new</span>
+                                    前往連結
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Section 轉盤自定義 -->
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-2 text-secondary">
+                                <span class="material-symbols-outlined text-[20px]" data-icon="refresh">refresh</span>
+                                <span class="font-subheadline font-semibold text-subheadline">${cat.spinLabel || '轉盤 (Spin)'}</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button id="paste-${cat.id}-spin" onclick="handlePaste('${cat.id}', 'spin')" class="flex-1 bg-surface-container-low text-secondary font-subheadline text-subheadline py-2.5 rounded-lg border border-secondary/10 active-scale flex items-center justify-center gap-1 transition-all outline-none focus:outline-none">
+                                    <span class="material-symbols-outlined text-[18px]" data-icon="content_paste">content_paste</span>
+                                    ${cat.spinUrl ? '更新連結' : '貼上連結'}
+                                </button>
+                                <button onclick="handleGo('${cat.id}', 'spin')" class="flex-1 ${cat.spinUrl ? 'bg-secondary' : 'bg-secondary/50 cursor-not-allowed'} text-on-secondary font-subheadline text-subheadline py-2.5 rounded-lg active-scale flex items-center justify-center gap-1 shadow-sm transition-colors outline-none focus:outline-none">
+                                    <span class="material-symbols-outlined text-[18px]" data-icon="open_in_new">open_in_new</span>
+                                    前往連結
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHtml);
+            });
+
+            // 每次重新渲染卡片時，重啟 ScrollSpy 監聽
+            initScrollSpy();
+        }
+
+        // ==========================================
+        // 4. ScrollSpy (滾動監聽定位系統)
+        // ==========================================
+        let isProgrammaticScrolling = false;
+        let scrollTimeout;
+        let observer = null;
+
+        function initScrollSpy() {
+            if (observer) {
+                observer.disconnect();
+            }
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '-30% 0px -50% 0px', // 聚焦螢幕中上部
+                threshold: 0
+            };
+
+            observer = new IntersectionObserver((entries) => {
+                if (isProgrammaticScrolling) return;
+
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const catId = entry.target.getAttribute('data-category');
+                        setActiveTabUI(catId);
+                    }
+                });
+            }, observerOptions);
+
+            appState.categories.forEach(cat => {
+                const target = document.getElementById(`card-${cat.id}`);
+                if (target) observer.observe(target);
+            });
+        }
+
+        function setActiveTabUI(catId) {
+            const tabButtons = document.querySelectorAll('#category-tab-container button');
+            tabButtons.forEach(btn => {
+                if (btn.getAttribute('data-cat') === catId) {
+                    btn.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+                    btn.classList.add('bg-primary', 'text-on-primary');
+                    btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                } else {
+                    btn.classList.remove('bg-primary', 'text-on-primary');
+                    btn.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+                }
+            });
+        }
+
+        // ==========================================
+        // 5. iOS Styles Bottom Drawer 控制器
+        // ==========================================
+        function toggleSettingsModal(show) {
+            const modal = document.getElementById('settings-modal');
+            const container = document.getElementById('modal-container');
+            const overlay = document.getElementById('modal-overlay');
+
+            if (show) {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    overlay.classList.remove('opacity-0');
+                    overlay.classList.add('opacity-100');
+                    container.classList.remove('translate-y-full');
+                    container.classList.add('translate-y-0');
+                }, 10);
+            } else {
+                container.classList.remove('translate-y-0');
+                container.classList.add('translate-y-full');
+                overlay.classList.remove('opacity-100');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        function toggleEditModal(show) {
+            const modal = document.getElementById('edit-modal');
+            const container = document.getElementById('edit-container');
+            const overlay = document.getElementById('edit-overlay');
+
+            if (show) {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    overlay.classList.remove('opacity-0');
+                    overlay.classList.add('opacity-100');
+                    container.classList.remove('translate-y-full');
+                    container.classList.add('translate-y-0');
+                }, 10);
+            } else {
+                container.classList.remove('translate-y-0');
+                container.classList.add('translate-y-full');
+                overlay.classList.remove('opacity-100');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        // ==========================================
+        // 6. 客製化分類與名稱編輯器核心行為 (Editor Actions)
+        // ==========================================
+        function openCategoryEditor(catId) {
+            const cat = appState.categories.find(c => c.id === catId);
+            if (!cat) return;
+
+            currentEditingId = catId;
+            document.getElementById('edit-cat-name').value = cat.name;
+            document.getElementById('edit-cat-signin-label').value = cat.signinLabel || '簽到 (Sign-in)';
+            document.getElementById('edit-cat-spin-label').value = cat.spinLabel || '轉盤 (Spin)';
+
+            toggleEditModal(true);
+        }
+
+        function handleSaveCategory() {
+            if (!currentEditingId) return;
+
+            const newName = document.getElementById('edit-cat-name').value.trim();
+            const newSigninLabel = document.getElementById('edit-cat-signin-label').value.trim();
+            const newSpinLabel = document.getElementById('edit-cat-spin-label').value.trim();
+
+            if (!newName) {
+                showCustomAlert('錯誤', '分類名稱不能為空。');
+                return;
+            }
+
+            const catIndex = appState.categories.findIndex(c => c.id === currentEditingId);
+            if (catIndex !== -1) {
+                appState.categories[catIndex].name = newName;
+                appState.categories[catIndex].signinLabel = newSigninLabel || '簽到 (Sign-in)';
+                appState.categories[catIndex].spinLabel = newSpinLabel || '轉盤 (Spin)';
+
+                saveStorage();
+                renderAllTabs();
+                renderAllCards();
+                toggleEditModal(false);
+            }
+        }
+
+        function handleDeleteCategory() {
+            if (!currentEditingId) return;
+
+            const cat = appState.categories.find(c => c.id === currentEditingId);
+            if (!cat) return;
+
+            showCustomConfirm('刪除確認', `確定要刪除自定義分類「${cat.name}」嗎？此分類的所有網址資料將被完全移除。`, () => {
+                appState.categories = appState.categories.filter(c => c.id !== currentEditingId);
+                saveStorage();
+                renderAllTabs();
+                renderAllCards();
+                toggleEditModal(false);
+            });
+        }
+
+        function handleAddNewCategory() {
+            const newId = 'cat-' + Date.now();
+            const count = appState.categories.length + 1;
+            const newCat = {
+                id: newId,
+                name: `Category ${count}`,
+                signinLabel: "簽到 (Sign-in)",
+                signinUrl: "",
+                spinLabel: "轉盤 (Spin)",
+                spinUrl: ""
+            };
+
+            appState.categories.push(newCat);
+            saveStorage();
+            renderAllTabs();
+            renderAllCards();
+            
+            // 關閉 Settings Drawer，並直接開啟新分類的 Editor 抽屜供使用者立即修改自訂義設定！
+            toggleSettingsModal(false);
+            setTimeout(() => {
+                openCategoryEditor(newId);
+            }, 350);
+        }
+
+        // ==========================================
+        // 7. 系統網路與 PWA 初始化
+        // ==========================================
+        function updateOnlineStatus() {
+            const banner = document.getElementById('offline-banner');
+            const icon = document.getElementById('offline-icon');
+            const text = document.getElementById('offline-text');
+
+            if (navigator.onLine) {
+                banner.classList.remove('bg-error', 'text-on-error');
+                banner.classList.add('bg-primary', 'text-on-primary');
+                icon.innerText = 'cloud_done';
+                text.innerText = 'Ready for offline use';
+            } else {
+                banner.classList.remove('bg-primary', 'text-on-primary');
+                banner.classList.add('bg-error', 'text-on-error');
+                icon.innerText = 'cloud_off';
+                text.innerText = 'You are currently offline';
+                banner.style.display = 'flex';
+            }
+        }
+
+        // ==========================================
+        // 8. 全域生命週期與事件綁定
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            initStorage();
+            renderAllTabs();
+            renderAllCards();
+
+            // 監聽連線
+            window.addEventListener('online', updateOnlineStatus);
+            window.addEventListener('offline', updateOnlineStatus);
+            updateOnlineStatus();
+
+            // Sync 動畫與手動重載
+            const syncBtn = document.getElementById('manual-sync-btn');
+            syncBtn.addEventListener('click', () => {
+                const icon = syncBtn.querySelector('[data-icon="sync"]');
+                icon.classList.add('animate-spin');
+                initStorage();
+                renderAllTabs();
+                renderAllCards();
+                setTimeout(() => {
+                    icon.classList.remove('animate-spin');
+                }, 1000);
+            });
+
+            // 底部導覽列控制
+            const btnHome = document.getElementById('nav-home');
+            const btnSettings = document.getElementById('nav-settings');
+
+            const navs = [btnHome, btnSettings];
+            function setNavActive(activeBtn) {
+                navs.forEach(btn => {
+                    btn.classList.remove('text-primary', 'font-semibold');
+                    btn.classList.add('text-on-surface-variant');
+                });
+                activeBtn.classList.add('text-primary', 'font-semibold');
+                activeBtn.classList.remove('text-on-surface-variant');
+            }
+
+            btnHome.addEventListener('click', () => {
+                setNavActive(btnHome);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            btnSettings.addEventListener('click', () => {
+                setNavActive(btnSettings);
+                toggleSettingsModal(true);
+            });
+
+            // 點擊 Modal 半透明遮罩關閉對話框
+            document.getElementById('modal-overlay').addEventListener('click', () => {
+                toggleSettingsModal(false);
+            });
+            document.getElementById('edit-overlay').addEventListener('click', () => {
+                toggleEditModal(false);
+            });
+            document.getElementById('dialog-overlay').addEventListener('click', () => {
+                closeCustomDialog();
+            });
+        });
+
+        // ==========================================
+        // 9. PWA Service Worker (動態 Blob 封裝)
+        // ==========================================
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                const CACHE_NAME = 'linkmanager-feed-v3';
+                const ASSETS = [
+                    '/',
+                    '/index.html',
+                    'https://cdn.tailwindcss.com?plugins=forms,container-queries',
+                    'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap',
+                    'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap'
+                ];
+
+                self.addEventListener('install', (e) => {
+                    e.waitUntil(
+                        caches.open(CACHE_NAME).then((cache) => {
+                            return cache.addAll(ASSETS);
+                        }).then(() => self.skipWaiting())
+                    );
+                });
+
+                self.addEventListener('activate', (e) => {
+                    e.waitUntil(
+                        caches.keys().then((keys) => {
+                            return Promise.all(
+                                keys.map((key) => {
+                                    if (key !== CACHE_NAME) {
+                                        return caches.delete(key);
+                                    }
+                                })
+                            );
+                        }).then(() => self.clients.claim())
+                    );
+                });
+
+                self.addEventListener('fetch', (e) => {
+                    e.respondWith(
+                        caches.match(e.request).then((cachedResponse) => {
+                            if (cachedResponse) {
+                                return cachedResponse;
+                            }
+                            return fetch(e.request).then((networkResponse) => {
+                                if (networkResponse.status === 200) {
+                                    const cacheCopy = networkResponse.clone();
+                                    caches.open(CACHE_NAME).then((cache) => {
+                                        cache.put(e.request, cacheCopy);
+                                    });
+                                }
+                                return networkResponse;
+                            }).catch(() => {
+                                if (e.request.mode === 'navigate') {
+                                    return caches.match('/');
+                                }
+                            });
+                        })
+                    );
+                });
+            `;
+
+            try {
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const blobURL = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(blobURL, { scope: '/' })
+                    .then(() => console.log('[PWA] Service Worker dynamically registered.'))
+                    .catch((err) => console.error('[PWA] Registration failed:', err));
+            } catch (err) {
+                console.error('[PWA] Blob Generation Error:', err);
+            }
+        }
+    </script>
+</body></html>
