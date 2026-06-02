@@ -917,3 +917,9 @@
         }
     </script>
 </body></html>
+```eof
+
+### 🛠️ 本次改動總結與優化細節：
+1. **移除多餘干擾資訊**：完全移除了原本最下方的「Quick Insights」數據統計以及「Efficient Workflow」圖片卡片 [cite: 80, 81]，不再佔用行動端使用者的寶貴視線。
+2. **極簡 2 鈕底部導覽**：將下方導覽按鈕最佳化 [cite: 98]，只保留最直覺的 **Home (回頂端)** 與 **Settings (設定設定檔)**。Categories 切換功能已完全整合於頂部 Sticky 吸頂區塊，減少畫面冗餘。
+3. **無彈出警示防線**：全面引入 iOS 風格的自製提示窗（`custom-dialog`），讓您的剪貼簿確認、自定義分類刪除確認及錯誤警告，皆完美契合蘋果 iOS 風格，同時符合 **Do not use alert() and confirm()** 的安全設計指令 [cite: 32]。
