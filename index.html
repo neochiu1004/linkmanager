@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html class="light" lang="zh-TW"><head>
 <meta charset="utf-8"/>
@@ -6,8 +7,10 @@
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <title>LinkManager</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<!-- 引入 SortableJS 以支援觸控拖曳排序 -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -123,12 +126,10 @@
         .active-scale:active {
             transform: scale(0.95);
         }
+        body {
+            min-height: max(884px, 100dvh);
+        }
     </style>
-<style>
-    body {
-      min-height: max(884px, 100dvh);
-    }
-  </style>
   </head>
 <body class="text-on-surface text-[17px]">
 <header class="bg-surface/90 backdrop-blur-xl border-b border-outline-variant/30 docked full-width top-0 sticky z-50 flex justify-between items-center px-margin-page h-11 w-full">
@@ -175,13 +176,17 @@
 <button class="material-symbols-outlined text-outline p-1" data-icon="close" onclick="toggleSettingsModal(false)">close</button>
 </div>
 <div class="space-y-4 text-left">
+<!-- 修訂後的分類管理與排序區塊 -->
 <div class="p-4 bg-surface-container-low rounded-xl">
-<p class="font-subheadline font-semibold text-on-surface mb-1">分類管理</p>
-<p class="font-footnote text-on-surface-variant mb-3">自由增加新的自定義分類，打造您專屬的行動儀表板。</p>
+<p class="font-subheadline font-semibold text-on-surface mb-1">分類管理與排序</p>
+<p class="font-footnote text-on-surface-variant mb-3">自由增加分類，或長按拖曳下方列表來調整分類顯示順序。</p>
+<div id="category-sort-list" class="space-y-2 mb-3 max-h-48 overflow-y-auto pr-1 hide-scrollbar">
+</div>
 <button onclick="handleAddNewCategory()" class="w-full py-2.5 bg-primary text-on-primary font-subheadline rounded-lg active-scale transition-colors flex items-center justify-center gap-1 font-semibold">
 <span class="material-symbols-outlined text-[20px]" data-icon="add_circle">add_circle</span> 新增自定義分類
 </button>
 </div>
+
 <div class="p-4 bg-surface-container-low rounded-xl">
 <p class="font-subheadline font-semibold text-on-surface mb-1">資料備份與搬移</p>
 <p class="font-footnote text-on-surface-variant mb-3">匯出目前的配置與網址資料為 JSON 檔案，或從備份檔案還原。</p>
@@ -438,6 +443,21 @@
         }
 
         // ==========================================
+        // 系統資料重置功能
+        // ==========================================
+        function clearAllData() {
+            showCustomConfirm('危險操作確認', '這將會清除所有您的自定義分類與連結資料，並還原為系統預設值。確定要執行嗎？', () => {
+                localStorage.removeItem(STORAGE_KEY);
+                appState.categories = JSON.parse(JSON.stringify(defaultCategories));
+                saveStorage();
+                renderAllTabs();
+                renderAllCards();
+                toggleSettingsModal(false);
+                showCustomAlert('已清除', '所有資料已成功還原為預設狀態。');
+            });
+        }
+
+        // ==========================================
         // 局部清空功能：一鍵清除單一分類下的所有 URL 連結
         // ==========================================
         function clearLinksOnlyInCurrentCategory() {
@@ -657,7 +677,13 @@
         // ==========================================
         // 5. iOS 抽屜彈出視窗控制中心
         // ==========================================
-        function toggleSettingsModal(show) { toggleModal('settings-modal', 'modal-container', 'modal-overlay', show); }
+        function toggleSettingsModal(show) { 
+            if(show) {
+                renderCategorySortList();
+            }
+            toggleModal('settings-modal', 'modal-container', 'modal-overlay', show); 
+        }
+
         function toggleEditModal(show) { toggleModal('edit-modal', 'edit-container', 'edit-overlay', show); }
         function toggleAddLinkModal(show) { toggleModal('add-link-modal', 'add-link-container', 'add-link-overlay', show); }
 
@@ -761,6 +787,49 @@
             appState.categories.push(newCat);
             saveStorage(); renderAllTabs(); renderAllCards(); toggleSettingsModal(false);
             setTimeout(() => { openCategoryEditor(newId); }, 350);
+        }
+
+        let sortableInstance = null;
+
+        function renderCategorySortList() {
+            const listContainer = document.getElementById('category-sort-list');
+            if (!listContainer) return;
+            
+            listContainer.innerHTML = '';
+            appState.categories.forEach(cat => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center gap-2 bg-surface-bright p-2 rounded-lg border border-outline-variant/20 cursor-move';
+                item.setAttribute('data-id', cat.id);
+                item.innerHTML = `
+                    <span class="material-symbols-outlined text-outline text-[18px]" data-icon="drag_indicator">drag_indicator</span>
+                    <span class="font-subheadline text-on-surface font-medium truncate flex-1">${cat.name}</span>
+                `;
+                listContainer.appendChild(item);
+            });
+
+            if (sortableInstance) {
+                sortableInstance.destroy();
+            }
+
+            // 實例化拖曳套件，並設定延遲以符合手機長按拖曳習慣
+            sortableInstance = new Sortable(listContainer, {
+                animation: 150,
+                delay: 150, 
+                delayOnTouchOnly: true,
+                onEnd: function (evt) {
+                    const oldIndex = evt.oldIndex;
+                    const newIndex = evt.newIndex;
+                    
+                    if (oldIndex === newIndex) return;
+                    
+                    const movedItem = appState.categories.splice(oldIndex, 1)[0];
+                    appState.categories.splice(newIndex, 0, movedItem);
+                    
+                    saveStorage();
+                    renderAllTabs();
+                    renderAllCards();
+                }
+            });
         }
 
         // ==========================================
@@ -887,3 +956,5 @@
         }
     </script>
 </body></html>
+
+```
