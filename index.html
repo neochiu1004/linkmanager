@@ -8,8 +8,6 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<!-- 引入 SortableJS 以支援觸控拖曳排序 -->
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -175,10 +173,9 @@
 <button class="material-symbols-outlined text-outline p-1" data-icon="close" onclick="toggleSettingsModal(false)">close</button>
 </div>
 <div class="space-y-4 text-left">
-<!-- 修訂後的分類管理與排序區塊 -->
 <div class="p-4 bg-surface-container-low rounded-xl">
 <p class="font-subheadline font-semibold text-on-surface mb-1">分類管理與排序</p>
-<p class="font-footnote text-on-surface-variant mb-3">自由增加分類，或長按拖曳下方列表來調整分類顯示順序。</p>
+<p class="font-footnote text-on-surface-variant mb-3">自由增加分類，並透過右側箭頭按鈕自由調整顯示順序。</p>
 <div id="category-sort-list" class="space-y-2 mb-3 max-h-48 overflow-y-auto pr-1 hide-scrollbar">
 </div>
 <button onclick="handleAddNewCategory()" class="w-full py-2.5 bg-primary text-on-primary font-subheadline rounded-lg active-scale transition-colors flex items-center justify-center gap-1 font-semibold">
@@ -420,7 +417,6 @@
                 try {
                     const importedObj = JSON.parse(reader.result);
                     
-                    // 基礎的格式合法性驗證
                     if (Array.isArray(importedObj) && importedObj.length > 0 && importedObj[0].hasOwnProperty('links')) {
                         showCustomConfirm('確認還原備份嗎？', '匯入備份檔案將會完全覆蓋此裝置目前的連結資料。確認執行？', () => {
                             appState.categories = importedObj;
@@ -436,7 +432,7 @@
                 } catch (err) {
                     showCustomAlert('讀取失敗', '解析 JSON 檔案出錯，請確保檔案完整且未被毀損。');
                 }
-                input.value = ''; // 重置 file 欄位
+                input.value = ''; 
             };
             reader.readAsText(file);
         }
@@ -457,7 +453,7 @@
         }
 
         // ==========================================
-        // 局部清空功能：一鍵清除單一分類下的所有 URL 連結
+        // 局部清空功能
         // ==========================================
         function clearLinksOnlyInCurrentCategory() {
             if (!currentEditingId) return;
@@ -467,19 +463,18 @@
             showCustomConfirm('清除網址確認', `確定要清除「${cat.name}」內的所有連結網址嗎？\n(注意：連結項目的自定義名稱將會予以保留)`, () => {
                 const catIndex = appState.categories.findIndex(c => c.id === currentEditingId);
                 if (catIndex !== -1) {
-                    // 將該分類下所有的 link 網址重設為空字串，完全保留項目 label 名稱
                     appState.categories[catIndex].links.forEach(link => {
                         link.url = "";
                     });
                     saveStorage();
                     renderAllCards();
-                    openCategoryEditor(currentEditingId); // 局部重繪編輯窗
+                    openCategoryEditor(currentEditingId); 
                 }
             });
         }
 
         // ==========================================
-        // 2. 智慧網址一鍵擷取器 (直接貼上，無對話框)
+        // 2. 智慧網址一鍵擷取器
         // ==========================================
         async function handlePasteDirect(catId, linkId) {
             let pastedText = '';
@@ -558,7 +553,6 @@
             appState.categories.forEach((cat, index) => {
                 const btn = document.createElement('button');
                 btn.setAttribute('data-cat', cat.id);
-                // 圓形化精簡標籤樣式 (Circle Pills Style)
                 btn.className = index === 0 
                     ? "bg-primary text-on-primary font-subheadline font-semibold px-5 py-2.5 rounded-full whitespace-nowrap shadow-sm active-scale transition-all duration-300" 
                     : "bg-surface-container-high text-on-surface-variant font-subheadline font-medium px-5 py-2.5 rounded-full whitespace-nowrap active-scale transition-all duration-300";
@@ -569,7 +563,6 @@
                     if (targetCard) {
                         isProgrammaticScrolling = true; clearTimeout(scrollTimeout);
                         setActiveTabUI(cat.id);
-                        const windowHeight = window.innerHeight;
                         const yOffset = -80; 
                         const y = targetCard.getBoundingClientRect().top + window.pageYOffset + yOffset;
                         window.scrollTo({ top: y, behavior: 'smooth' });
@@ -704,7 +697,7 @@
         }
 
         // ==========================================
-        // 6. 客製化內部增刪管理邏輯
+        // 6. 客製化內部增刪與排列順序邏輯
         // ==========================================
         function openCategoryEditor(catId) {
             const cat = appState.categories.find(c => c.id === catId);
@@ -784,51 +777,61 @@
                 ]
             };
             appState.categories.push(newCat);
-            saveStorage(); renderAllTabs(); renderAllCards(); toggleSettingsModal(false);
-            setTimeout(() => { openCategoryEditor(newId); }, 350);
+            saveStorage(); renderAllTabs(); renderAllCards(); 
+            renderCategorySortList(); // 重新整理設定中的順序列表
         }
 
-        let sortableInstance = null;
-
+        // 使用「上移/下移」按鈕重新渲染設定內的順序清單
         function renderCategorySortList() {
             const listContainer = document.getElementById('category-sort-list');
             if (!listContainer) return;
             
             listContainer.innerHTML = '';
-            appState.categories.forEach(cat => {
+            appState.categories.forEach((cat, index) => {
                 const item = document.createElement('div');
-                item.className = 'flex items-center gap-2 bg-surface-bright p-2 rounded-lg border border-outline-variant/20 cursor-move';
-                item.setAttribute('data-id', cat.id);
+                item.className = 'flex items-center justify-between bg-surface-bright p-2 rounded-lg border border-outline-variant/20';
+                
+                // 判斷是否為首項或末項，來將按鈕設定為停用樣式
+                const isFirst = index === 0;
+                const isLast = index === appState.categories.length - 1;
+
                 item.innerHTML = `
-                    <span class="material-symbols-outlined text-outline text-[18px]" data-icon="drag_indicator">drag_indicator</span>
-                    <span class="font-subheadline text-on-surface font-medium truncate flex-1">${cat.name}</span>
+                    <span class="font-subheadline text-on-surface font-semibold truncate max-w-[65%] pl-1">${cat.name}</span>
+                    <div class="flex gap-1.5">
+                        <button onclick="moveCategoryUp(${index})" ${isFirst ? 'disabled' : ''} class="w-8 h-8 flex items-center justify-center rounded-md border border-outline-variant/40 bg-white text-primary disabled:opacity-20 disabled:text-outline active-scale outline-none">
+                            <span class="material-symbols-outlined text-[18px]">arrow_upward</span>
+                        </button>
+                        <button onclick="moveCategoryDown(${index})" ${isLast ? 'disabled' : ''} class="w-8 h-8 flex items-center justify-center rounded-md border border-outline-variant/40 bg-white text-primary disabled:opacity-20 disabled:text-outline active-scale outline-none">
+                            <span class="material-symbols-outlined text-[18px]">arrow_downward</span>
+                        </button>
+                    </div>
                 `;
                 listContainer.appendChild(item);
             });
+        }
 
-            if (sortableInstance) {
-                sortableInstance.destroy();
-            }
+        function moveCategoryUp(index) {
+            if (index <= 0) return;
+            const temp = appState.categories[index];
+            appState.categories[index] = appState.categories[index - 1];
+            appState.categories[index - 1] = temp;
+            
+            saveStorage();
+            renderCategorySortList();
+            renderAllTabs();
+            renderAllCards();
+        }
 
-            // 實例化拖曳套件，並設定延遲以符合手機長按拖曳習慣
-            sortableInstance = new Sortable(listContainer, {
-                animation: 150,
-                delay: 150, 
-                delayOnTouchOnly: true,
-                onEnd: function (evt) {
-                    const oldIndex = evt.oldIndex;
-                    const newIndex = evt.newIndex;
-                    
-                    if (oldIndex === newIndex) return;
-                    
-                    const movedItem = appState.categories.splice(oldIndex, 1)[0];
-                    appState.categories.splice(newIndex, 0, movedItem);
-                    
-                    saveStorage();
-                    renderAllTabs();
-                    renderAllCards();
-                }
-            });
+        function moveCategoryDown(index) {
+            if (index >= appState.categories.length - 1) return;
+            const temp = appState.categories[index];
+            appState.categories[index] = appState.categories[index + 1];
+            appState.categories[index + 1] = temp;
+            
+            saveStorage();
+            renderCategorySortList();
+            renderAllTabs();
+            renderAllCards();
         }
 
         // ==========================================
@@ -879,10 +882,10 @@
             const text = document.getElementById('offline-text');
             if (navigator.onLine) {
                 banner.className = 'bg-primary text-on-primary px-4 py-2 flex items-center justify-between transition-all duration-300';
-                icon.innerText = 'cloud_done'; text.innerText = 'Ready for offline use';
+                icon.innerText = 'cloud_done'; if(text) text.innerText = 'Ready for offline use';
             } else {
                 banner.className = 'bg-error text-on-error px-4 py-2 flex items-center justify-between transition-all duration-300';
-                icon.innerText = 'cloud_off'; text.innerText = 'You are currently offline';
+                icon.innerText = 'cloud_off'; if(text) text.innerText = 'You are currently offline';
                 banner.style.display = 'flex';
             }
         }
