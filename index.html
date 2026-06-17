@@ -264,7 +264,7 @@
 </div>
 
 <div id="custom-dialog" class="fixed inset-0 z-[200] flex items-center justify-center hidden">
-<div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-200 opacity-0" id="dialog-overlay"></div>
+<div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-open-duration-200 opacity-0" id="dialog-overlay"></div>
 <div class="relative bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg rounded-2xl w-72 p-5 text-center shadow-2xl scale-95 opacity-0 transition-all duration-200 z-10" id="dialog-content">
 <h4 class="font-headline text-headline text-on-surface mb-2 font-semibold" id="dialog-title">提示</h4>
 <p class="font-footnote text-footnote text-on-surface-variant mb-6 whitespace-pre-line" id="dialog-message">訊息內容</p>
@@ -283,40 +283,40 @@
                 id: "cat-A", 
                 name: "Category A", 
                 links: [
-                    { id: "link-1", label: "簽到 (Sign-in)", url: "", color: "text-primary", border: "border-primary/10", bg: "bg-primary" },
-                    { id: "link-2", label: "轉盤 (Spin)", url: "", color: "text-secondary", border: "border-secondary/10", bg: "bg-secondary" }
+                    { id: "link-1", label: "簽到 (Sign-in)", url: "", color: "text-primary", border: "border-primary/10", bg: "bg-primary", clickCount: 0, updatedAt: "無" },
+                    { id: "link-2", label: "轉盤 (Spin)", url: "", color: "text-secondary", border: "border-secondary/10", bg: "bg-secondary", clickCount: 0, updatedAt: "無" }
                 ]
             },
             { 
                 id: "cat-B", 
                 name: "Category B", 
                 links: [
-                    { id: "link-1", label: "簽到 (Sign-in)", url: "", color: "text-primary", border: "border-primary/10", bg: "bg-primary" },
-                    { id: "link-2", label: "轉盤 (Spin)", url: "", color: "text-secondary", border: "border-secondary/10", bg: "bg-secondary" }
+                    { id: "link-1", label: "簽到 (Sign-in)", url: "", color: "text-primary", border: "border-primary/10", bg: "bg-primary", clickCount: 0, updatedAt: "無" },
+                    { id: "link-2", label: "轉盤 (Spin)", url: "", color: "text-secondary", border: "border-secondary/10", bg: "bg-secondary", clickCount: 0, updatedAt: "無" }
                 ]
             },
             { 
                 id: "cat-C", 
                 name: "Category C", 
                 links: [
-                    { id: "link-1", label: "簽到 (Sign-in)", url: "", color: "text-primary", border: "border-primary/10", bg: "bg-primary" },
-                    { id: "link-2", label: "轉盤 (Spin)", url: "", color: "text-secondary", border: "border-secondary/10", bg: "bg-secondary" }
+                    { id: "link-1", label: "簽到 (Sign-in)", url: "", color: "text-primary", border: "border-primary/10", bg: "bg-primary", clickCount: 0, updatedAt: "無" },
+                    { id: "link-2", label: "轉盤 (Spin)", url: "", color: "text-secondary", border: "border-secondary/10", bg: "bg-secondary", clickCount: 0, updatedAt: "無" }
                 ]
             },
             { 
                 id: "cat-D", 
                 name: "Category D", 
                 links: [
-                    { id: "link-1", label: "簽到 (Sign-in)", url: "", color: "text-primary", border: "border-primary/10", bg: "bg-primary" },
-                    { id: "link-2", label: "轉盤 (Spin)", url: "", color: "text-secondary", border: "border-secondary/10", bg: "bg-secondary" }
+                    { id: "link-1", label: "簽到 (Sign-in)", url: "", color: "text-primary", border: "border-primary/10", bg: "bg-primary", clickCount: 0, updatedAt: "無" },
+                    { id: "link-2", label: "轉盤 (Spin)", url: "", color: "text-secondary", border: "border-secondary/10", bg: "bg-secondary", clickCount: 0, updatedAt: "無" }
                 ]
             },
             { 
                 id: "cat-E", 
                 name: "Category E", 
                 links: [
-                    { id: "link-1", label: "簽到 (Sign-in)", url: "", color: "text-primary", border: "border-primary/10", bg: "bg-primary" },
-                    { id: "link-2", label: "轉盤 (Spin)", url: "", color: "text-secondary", border: "border-secondary/10", bg: "bg-secondary" }
+                    { id: "link-1", label: "簽到 (Sign-in)", url: "", color: "text-primary", border: "border-primary/10", bg: "bg-primary", clickCount: 0, updatedAt: "無" },
+                    { id: "link-2", label: "轉盤 (Spin)", url: "", color: "text-secondary", border: "border-secondary/10", bg: "bg-secondary", clickCount: 0, updatedAt: "無" }
                 ]
             }
         ];
@@ -373,6 +373,14 @@
             if (stored) {
                 try {
                     appState.categories = JSON.parse(stored);
+                    appState.categories.forEach(cat => {
+                        if (cat.links) {
+                            cat.links.forEach(link => {
+                                if (link.clickCount === undefined) link.clickCount = 0;
+                                if (link.updatedAt === undefined) link.updatedAt = "無";
+                            });
+                        }
+                    });
                 } catch (e) {
                     appState.categories = JSON.parse(JSON.stringify(defaultCategories));
                     saveStorage();
@@ -420,6 +428,14 @@
                     if (Array.isArray(importedObj) && importedObj.length > 0 && importedObj[0].hasOwnProperty('links')) {
                         showCustomConfirm('確認還原備份嗎？', '匯入備份檔案將會完全覆蓋此裝置目前的連結資料。確認執行？', () => {
                             appState.categories = importedObj;
+                            appState.categories.forEach(cat => {
+                                if (cat.links) {
+                                    cat.links.forEach(link => {
+                                        if (link.clickCount === undefined) link.clickCount = 0;
+                                        if (link.updatedAt === undefined) link.updatedAt = "無";
+                                    });
+                                }
+                            });
                             saveStorage();
                             renderAllTabs();
                             renderAllCards();
@@ -465,6 +481,8 @@
                 if (catIndex !== -1) {
                     appState.categories[catIndex].links.forEach(link => {
                         link.url = "";
+                        link.clickCount = 0;
+                        link.updatedAt = "無";
                     });
                     saveStorage();
                     renderAllCards();
@@ -513,6 +531,8 @@
                         const linkIndex = appState.categories[catIndex].links.findIndex(l => l.id === linkId);
                         if (linkIndex !== -1) {
                             appState.categories[catIndex].links[linkIndex].url = targetUrl;
+                            appState.categories[catIndex].links[linkIndex].clickCount = 0;
+                            appState.categories[catIndex].links[linkIndex].updatedAt = new Date().toISOString().slice(0, 10);
                             saveStorage();
                             renderAllCards();
                             
@@ -532,10 +552,18 @@
         }
 
         function handleGoDirect(catId, linkId) {
-            const targetCat = appState.categories.find(c => c.id === catId);
-            const targetLink = targetCat ? targetCat.links.find(l => l.id === linkId) : null;
+            const catIndex = appState.categories.findIndex(c => c.id === catId);
+            if (catIndex === -1) return;
+            
+            const linkIndex = appState.categories[catIndex].links.findIndex(l => l.id === linkId);
+            if (linkIndex === -1) return;
+            
+            const targetLink = appState.categories[catIndex].links[linkIndex];
 
             if (targetLink && targetLink.url && /^https?:\/\//i.test(targetLink.url)) {
+                appState.categories[catIndex].links[linkIndex].clickCount = (appState.categories[catIndex].links[linkIndex].clickCount || 0) + 1;
+                saveStorage();
+                renderAllCards();
                 window.open(targetLink.url, '_blank');
             } else {
                 showCustomAlert('提示', `請先點擊「貼上連結」配置 [${targetLink ? targetLink.label : '功能'}] 的網址。`);
@@ -585,12 +613,19 @@
                     const activeColor = link.color || 'text-primary';
                     const activeBorder = link.border || 'border-primary/10';
                     const activeBg = link.bg || 'bg-primary';
+                    const clicks = link.clickCount !== undefined ? link.clickCount : 0;
+                    const dateStr = link.updatedAt || '無';
                     
                     linksHtml += `
                     <div class="space-y-2 border-b border-outline-variant/10 pb-3.5 last:border-none last:pb-0">
-                        <div class="flex items-center gap-2 ${activeColor}">
-                            <span class="material-symbols-outlined text-[19px]" data-icon="link">link</span>
-                            <span class="font-subheadline font-semibold text-subheadline truncate max-w-[85%]">${link.label}</span>
+                        <div class="flex flex-col">
+                            <div class="flex items-center gap-2 ${activeColor}">
+                                <span class="material-symbols-outlined text-[19px]" data-icon="link">link</span>
+                                <span class="font-subheadline font-semibold text-subheadline truncate max-w-[85%]">${link.label}</span>
+                            </div>
+                            <div class="text-[12px] text-outline pl-7 mt-0.5 font-medium">
+                                點擊：${clicks} 次 &nbsp;|&nbsp; 更新：${dateStr}
+                            </div>
                         </div>
                         <div class="flex gap-2">
                             <button id="paste-${cat.id}-${link.id}" onclick="handlePasteDirect('${cat.id}', '${link.id}')" class="flex-1 bg-surface-container-low ${activeColor} font-subheadline font-semibold py-2 rounded-lg border ${activeBorder} active-scale flex items-center justify-center gap-1 transition-all outline-none">
@@ -772,13 +807,13 @@
             const newCat = {
                 id: newId, name: `Category ${appState.categories.length + 1}`,
                 links: [
-                    { id: "link-1", label: "簽到 (Sign-in)", url: "", color: "text-primary", border: "border-primary/10", bg: "bg-primary" },
-                    { id: "link-2", label: "轉盤 (Spin)", url: "", color: "text-secondary", border: "border-secondary/10", bg: "bg-secondary" }
+                    { id: "link-1", label: "簽到 (Sign-in)", url: "", color: "text-primary", border: "border-primary/10", bg: "bg-primary", clickCount: 0, updatedAt: "無" },
+                    { id: "link-2", label: "轉盤 (Spin)", url: "", color: "text-secondary", border: "border-secondary/10", bg: "bg-secondary", clickCount: 0, updatedAt: "無" }
                 ]
             };
             appState.categories.push(newCat);
             saveStorage(); renderAllTabs(); renderAllCards(); 
-            renderCategorySortList(); // 重新整理設定中的順序列表
+            renderCategorySortList(); 
         }
 
         // 使用「上移/下移」按鈕重新渲染設定內的順序清單
@@ -863,7 +898,9 @@
                     url: "",
                     color: selectedStyle.color,
                     border: selectedStyle.border,
-                    bg: selectedStyle.bg
+                    bg: selectedStyle.bg,
+                    clickCount: 0,
+                    updatedAt: "無"
                 };
 
                 appState.categories[catIndex].links.push(newLinkItem);
