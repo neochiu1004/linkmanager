@@ -1105,7 +1105,10 @@
             `;
             try {
                 const blob = new Blob([swCode], { type: 'application/javascript' });
-                navigator.serviceWorker.register(URL.createObjectURL(blob), { scope: '/' });
+                navigator.serviceWorker.register(URL.createObjectURL(blob), { scope: '/' })
+                    .catch(function(err) {
+                        console.warn('[PWA] ServiceWorker 註冊受限 (於當前預覽環境預期內):', err.message);
+                    });
             } catch (err) { console.error('[PWA] SW Blob error:', err); }
         }
     </script>
