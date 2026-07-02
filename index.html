@@ -1,7 +1,9 @@
+
 <!DOCTYPE html>
 <html class="light" lang="zh-TW"><head>
 <meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<!-- 【防放大鎖定】加入 maximum-scale=1.0 與 user-scalable=0 -->
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover" name="viewport"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <title>LinkManager</title>
@@ -103,6 +105,8 @@
             -webkit-tap-highlight-color: transparent;
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             scroll-behavior: smooth;
+            /* 【防放大鎖定】禁用瀏覽器預設的手勢縮放 (雙擊/捏合) */
+            touch-action: manipulation;
         }
         .ios-blur {
             backdrop-filter: blur(20px);
@@ -294,30 +298,6 @@
                     { id: "link-1", label: "簽到 (Sign-in)", url: "", color: "text-primary", border: "border-primary/10", bg: "bg-primary", clickCount: 0, updatedAt: "無" },
                     { id: "link-2", label: "轉盤 (Spin)", url: "", color: "text-secondary", border: "border-secondary/10", bg: "bg-secondary", clickCount: 0, updatedAt: "無" }
                 ]
-            },
-            { 
-                id: "cat-C", 
-                name: "Category C", 
-                links: [
-                    { id: "link-1", label: "簽到 (Sign-in)", url: "", color: "text-primary", border: "border-primary/10", bg: "bg-primary", clickCount: 0, updatedAt: "無" },
-                    { id: "link-2", label: "轉盤 (Spin)", url: "", color: "text-secondary", border: "border-secondary/10", bg: "bg-secondary", clickCount: 0, updatedAt: "無" }
-                ]
-            },
-            { 
-                id: "cat-D", 
-                name: "Category D", 
-                links: [
-                    { id: "link-1", label: "簽到 (Sign-in)", url: "", color: "text-primary", border: "border-primary/10", bg: "bg-primary", clickCount: 0, updatedAt: "無" },
-                    { id: "link-2", label: "轉盤 (Spin)", url: "", color: "text-secondary", border: "border-secondary/10", bg: "bg-secondary", clickCount: 0, updatedAt: "無" }
-                ]
-            },
-            { 
-                id: "cat-E", 
-                name: "Category E", 
-                links: [
-                    { id: "link-1", label: "簽到 (Sign-in)", url: "", color: "text-primary", border: "border-primary/10", bg: "bg-primary", clickCount: 0, updatedAt: "無" },
-                    { id: "link-2", label: "轉盤 (Spin)", url: "", color: "text-secondary", border: "border-secondary/10", bg: "bg-secondary", clickCount: 0, updatedAt: "無" }
-                ]
             }
         ];
 
@@ -453,9 +433,6 @@
             reader.readAsText(file);
         }
 
-        // ==========================================
-        // 系統資料重置功能
-        // ==========================================
         function clearAllData() {
             showCustomConfirm('危險操作確認', '這將會清除所有您的自定義分類與連結資料，並還原為系統預設值。確定要執行嗎？', () => {
                 localStorage.removeItem(STORAGE_KEY);
@@ -468,9 +445,6 @@
             });
         }
 
-        // ==========================================
-        // 局部清空功能
-        // ==========================================
         function clearLinksOnlyInCurrentCategory() {
             if (!currentEditingId) return;
             const cat = appState.categories.find(c => c.id === currentEditingId);
@@ -551,7 +525,6 @@
             }
         }
 
-        // 【智慧合併】點擊跳轉，若無網址則自動讀取剪貼簿
         async function handleGoDirect(catId, linkId) {
             const catIndex = appState.categories.findIndex(c => c.id === catId);
             if (catIndex === -1) return;
@@ -568,7 +541,7 @@
                 renderAllCards();
                 window.open(targetLink.url, '_blank');
             } else {
-                // 無網址：自動觸發剪貼簿智慧讀取
+                // 無網址：自動觸發剪貼簿讀取 (純無痕捷徑，不寫入 LocalStorage)
                 try {
                     let pastedText = '';
                     if (navigator.clipboard && navigator.clipboard.readText) {
@@ -608,7 +581,6 @@
             }
         }
 
-        // 【一鍵複製】複製已設定好的網址
         async function handleCopyDirect(catId, linkId) {
             const catIndex = appState.categories.findIndex(c => c.id === catId);
             if (catIndex === -1) return;
@@ -616,13 +588,12 @@
             if (linkIndex === -1) return;
 
             const targetLink = appState.categories[catIndex].links[linkIndex];
-            if (!targetLink || !targetLink.url) return; // 無網址時不作用
+            if (!targetLink || !targetLink.url) return; 
 
             try {
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     await navigator.clipboard.writeText(targetLink.url);
                 } else {
-                    // Fallback using execCommand
                     const textArea = document.createElement("textarea");
                     textArea.value = targetLink.url;
                     textArea.style.position = "fixed"; 
@@ -633,7 +604,6 @@
                     document.body.removeChild(textArea);
                 }
                 
-                // 視覺回饋
                 const btnId = `copy-${catId}-${linkId}`;
                 const btn = document.getElementById(btnId);
                 if (btn) {
@@ -647,7 +617,6 @@
             }
         }
 
-        // 【單獨刪除】刪除單個連結項目
         function handleDeleteLinkDirect(catId, linkId) {
             const catIndex = appState.categories.findIndex(c => c.id === catId);
             if (catIndex === -1) return;
@@ -661,7 +630,6 @@
                 saveStorage();
                 renderAllCards();
                 
-                // 若當下正在編輯視窗中，一併更新編輯列表
                 if (currentEditingId === catId && !document.getElementById('edit-modal').classList.contains('hidden')) {
                     openCategoryEditor(catId);
                 }
@@ -722,7 +690,6 @@
                                 <span class="material-symbols-outlined text-[19px]" data-icon="link">link</span>
                                 <span class="font-subheadline font-semibold text-subheadline truncate max-w-[85%] flex-1">${link.label}</span>
                                 
-                                <!-- 微型控制圖標 (複製 & 刪除) -->
                                 <div class="flex gap-1 ml-auto">
                                     <button onclick="handleCopyDirect('${cat.id}', '${link.id}')" id="copy-${cat.id}-${link.id}" class="p-1 rounded-md active-scale transition-colors ${hasUrl ? 'text-outline hover:text-primary hover:bg-primary/10' : 'text-outline/30 cursor-not-allowed'}" ${hasUrl ? '' : 'disabled'}>
                                         <span class="material-symbols-outlined text-[18px]" data-icon="content_copy">content_copy</span>
@@ -741,7 +708,6 @@
                                 <span class="material-symbols-outlined text-[18px]" data-icon="content_paste">content_paste</span>
                                 ${hasUrl ? '更新連結' : '貼上連結'}
                             </button>
-                            <!-- 即使無網址也保持可點擊狀態，用以觸發智慧合併讀取 -->
                             <button onclick="handleGoDirect('${cat.id}', '${link.id}')" class="flex-1 ${hasUrl ? activeBg : 'bg-surface-container-highest text-on-surface-variant border border-outline-variant/30'} text-white font-subheadline font-semibold py-2 rounded-lg active-scale flex items-center justify-center gap-1 shadow-sm transition-all outline-none">
                                 <span class="material-symbols-outlined text-[18px]" data-icon="${hasUrl ? 'open_in_new' : 'bolt'}">${hasUrl ? 'open_in_new' : 'bolt'}</span>
                                 ${hasUrl ? '前往連結' : '一鍵直達'}
@@ -815,12 +781,9 @@
         // 5. iOS 抽屜彈出視窗控制中心
         // ==========================================
         function toggleSettingsModal(show) { 
-            if(show) {
-                renderCategorySortList();
-            }
+            if(show) { renderCategorySortList(); }
             toggleModal('settings-modal', 'modal-container', 'modal-overlay', show); 
         }
-
         function toggleEditModal(show) { toggleModal('edit-modal', 'edit-container', 'edit-overlay', show); }
         function toggleAddLinkModal(show) { toggleModal('add-link-modal', 'add-link-container', 'add-link-overlay', show); }
 
@@ -844,6 +807,23 @@
         // ==========================================
         // 6. 客製化內部增刪與排列順序邏輯
         // ==========================================
+        
+        // 確保編輯過程中的文字不會因為畫面重繪而遺失
+        function syncEditModalInputs() {
+            if (!currentEditingId) return;
+            const catIndex = appState.categories.findIndex(c => c.id === currentEditingId);
+            if (catIndex === -1) return;
+            
+            const inputs = document.querySelectorAll('#edit-links-list input');
+            inputs.forEach(input => {
+                const lId = input.getAttribute('data-link-id');
+                const targetL = appState.categories[catIndex].links.find(l => l.id === lId);
+                if (targetL && input.value.trim() !== '') {
+                    targetL.label = input.value.trim();
+                }
+            });
+        }
+
         function openCategoryEditor(catId) {
             const cat = appState.categories.find(c => c.id === catId);
             if (!cat) return;
@@ -854,12 +834,25 @@
             const linksListContainer = document.getElementById('edit-links-list');
             linksListContainer.innerHTML = '';
             
-            cat.links.forEach((link) => {
+            cat.links.forEach((link, index) => {
+                const isFirst = index === 0;
+                const isLast = index === cat.links.length - 1;
+
                 const item = document.createElement('div');
-                item.className = "flex items-center gap-2 bg-surface-container-low p-2 rounded-lg border border-outline-variant/20";
+                item.className = "flex items-center gap-1.5 bg-surface-container-low p-2 rounded-lg border border-outline-variant/20";
                 item.innerHTML = `
-                    <input type="text" data-link-id="${link.id}" value="${link.label}" class="flex-1 px-2 py-1 border border-outline-variant/30 rounded bg-white text-xs text-on-surface focus:outline-none font-medium">
-                    <button onclick="handleDeleteLinkInline('${link.id}')" class="material-symbols-outlined text-error hover:text-red-700 p-1 text-sm outline-none" data-icon="delete">delete</button>
+                    <input type="text" data-link-id="${link.id}" value="${link.label}" class="flex-1 px-2 py-1.5 border border-outline-variant/30 rounded bg-white text-xs text-on-surface focus:outline-none font-medium min-w-0">
+                    <div class="flex gap-1 shrink-0">
+                        <button onclick="handleMoveLinkUp(${index})" ${isFirst ? 'disabled' : ''} class="w-7 h-7 flex items-center justify-center rounded border border-outline-variant/40 bg-white text-primary disabled:opacity-20 disabled:text-outline active-scale outline-none shrink-0">
+                            <span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+                        </button>
+                        <button onclick="handleMoveLinkDown(${index})" ${isLast ? 'disabled' : ''} class="w-7 h-7 flex items-center justify-center rounded border border-outline-variant/40 bg-white text-primary disabled:opacity-20 disabled:text-outline active-scale outline-none shrink-0">
+                            <span class="material-symbols-outlined text-[16px]">arrow_downward</span>
+                        </button>
+                        <button onclick="handleDeleteLinkInline('${link.id}')" class="w-7 h-7 flex items-center justify-center rounded border border-outline-variant/40 bg-white text-error hover:text-red-700 active-scale outline-none shrink-0">
+                            <span class="material-symbols-outlined text-[16px]" data-icon="delete">delete</span>
+                        </button>
+                    </div>
                 `;
                 linksListContainer.appendChild(item);
             });
@@ -871,7 +864,39 @@
             toggleEditModal(true);
         }
 
+        function handleMoveLinkUp(index) {
+            if (index <= 0 || !currentEditingId) return;
+            syncEditModalInputs();
+            
+            const cat = appState.categories.find(c => c.id === currentEditingId);
+            const temp = cat.links[index];
+            cat.links[index] = cat.links[index - 1];
+            cat.links[index - 1] = temp;
+            
+            saveStorage();
+            openCategoryEditor(currentEditingId);
+            renderAllCards();
+        }
+
+        function handleMoveLinkDown(index) {
+            if (!currentEditingId) return;
+            const cat = appState.categories.find(c => c.id === currentEditingId);
+            if (index >= cat.links.length - 1) return;
+            syncEditModalInputs();
+            
+            const temp = cat.links[index];
+            cat.links[index] = cat.links[index + 1];
+            cat.links[index + 1] = temp;
+            
+            saveStorage();
+            openCategoryEditor(currentEditingId);
+            renderAllCards();
+        }
+
         function handleDeleteLinkInline(linkId) {
+            if (!currentEditingId) return;
+            syncEditModalInputs();
+            
             const catIndex = appState.categories.findIndex(c => c.id === currentEditingId);
             if (catIndex !== -1) {
                 appState.categories[catIndex].links = appState.categories[catIndex].links.filter(l => l.id !== linkId);
@@ -889,16 +914,7 @@
             const catIndex = appState.categories.findIndex(c => c.id === currentEditingId);
             if (catIndex !== -1) {
                 appState.categories[catIndex].name = newName;
-                
-                const inputs = document.querySelectorAll('#edit-links-list input');
-                inputs.forEach(input => {
-                    const lId = input.getAttribute('data-link-id');
-                    const targetL = appState.categories[catIndex].links.find(l => l.id === lId);
-                    if (targetL && input.value.trim()) {
-                        targetL.label = input.value.trim();
-                    }
-                });
-
+                syncEditModalInputs(); 
                 saveStorage(); renderAllTabs(); renderAllCards(); toggleEditModal(false);
             }
         }
@@ -926,7 +942,6 @@
             renderCategorySortList(); 
         }
 
-        // 使用「上移/下移」按鈕重新渲染設定內的順序清單
         function renderCategorySortList() {
             const listContainer = document.getElementById('category-sort-list');
             if (!listContainer) return;
@@ -936,7 +951,6 @@
                 const item = document.createElement('div');
                 item.className = 'flex items-center justify-between bg-surface-bright p-2 rounded-lg border border-outline-variant/20';
                 
-                // 判斷是否為首項或末項，來將按鈕設定為停用樣式
                 const isFirst = index === 0;
                 const isLast = index === appState.categories.length - 1;
 
@@ -961,10 +975,7 @@
             appState.categories[index] = appState.categories[index - 1];
             appState.categories[index - 1] = temp;
             
-            saveStorage();
-            renderCategorySortList();
-            renderAllTabs();
-            renderAllCards();
+            saveStorage(); renderCategorySortList(); renderAllTabs(); renderAllCards();
         }
 
         function moveCategoryDown(index) {
@@ -973,10 +984,7 @@
             appState.categories[index] = appState.categories[index + 1];
             appState.categories[index + 1] = temp;
             
-            saveStorage();
-            renderCategorySortList();
-            renderAllTabs();
-            renderAllCards();
+            saveStorage(); renderCategorySortList(); renderAllTabs(); renderAllCards();
         }
 
         // ==========================================
