@@ -597,11 +597,6 @@
                     }
 
                     if (targetUrl) {
-                        appState.categories[catIndex].links[linkIndex].url = targetUrl;
-                        appState.categories[catIndex].links[linkIndex].clickCount = 1;
-                        appState.categories[catIndex].links[linkIndex].updatedAt = new Date().toISOString().slice(0, 10);
-                        saveStorage();
-                        renderAllCards();
                         window.open(targetUrl, '_blank');
                     } else {
                         showCustomAlert('辨識失敗', '剪貼簿中找不到有效的網址片段，無法自動跳轉。');
