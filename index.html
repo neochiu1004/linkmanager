@@ -492,7 +492,7 @@
         }
 
         // ==========================================
-        // 2. 智慧網址一鍵擷取器
+        // 2. 智慧網址一鍵擷取器 與 整合跳轉功能
         // ==========================================
         async function handlePasteDirect(catId, linkId) {
             let pastedText = '';
@@ -551,7 +551,8 @@
             }
         }
 
-        function handleGoDirect(catId, linkId) {
+        // 【智慧合併】點擊跳轉，若無網址則自動讀取剪貼簿
+        async function handleGoDirect(catId, linkId) {
             const catIndex = appState.categories.findIndex(c => c.id === catId);
             if (catIndex === -1) return;
             
@@ -560,14 +561,116 @@
             
             const targetLink = appState.categories[catIndex].links[linkIndex];
 
+            // 已有網址：直接打開並計數
             if (targetLink && targetLink.url && /^https?:\/\//i.test(targetLink.url)) {
                 appState.categories[catIndex].links[linkIndex].clickCount = (appState.categories[catIndex].links[linkIndex].clickCount || 0) + 1;
                 saveStorage();
                 renderAllCards();
                 window.open(targetLink.url, '_blank');
             } else {
-                showCustomAlert('提示', `請先點擊「貼上連結」配置 [${targetLink ? targetLink.label : '功能'}] 的網址。`);
+                // 無網址：自動觸發剪貼簿智慧讀取
+                try {
+                    let pastedText = '';
+                    if (navigator.clipboard && navigator.clipboard.readText) {
+                        pastedText = await navigator.clipboard.readText();
+                    } else {
+                        throw new Error('Clipboard API blocked or unavailable');
+                    }
+
+                    if (!pastedText) {
+                        showCustomAlert('提示', '剪貼簿目前為空。');
+                        return;
+                    }
+
+                    const strictUrlRegex = /(https?:\/\/[^\s\u4e00-\u9fa5]+)/i;
+                    const match = pastedText.match(strictUrlRegex);
+                    
+                    let targetUrl = '';
+                    if (match) {
+                        targetUrl = match[0].trim();
+                    } else {
+                        const looseUrlRegex = /([a-zA-Z0-9-]+\.[a-zA-Z0-9-]+[^\s\u4e00-\u9fa5]*)/i;
+                        const looseMatch = pastedText.match(looseUrlRegex);
+                        if (looseMatch) {
+                            targetUrl = 'https://' + looseMatch[0].trim();
+                        }
+                    }
+
+                    if (targetUrl) {
+                        appState.categories[catIndex].links[linkIndex].url = targetUrl;
+                        appState.categories[catIndex].links[linkIndex].clickCount = 1;
+                        appState.categories[catIndex].links[linkIndex].updatedAt = new Date().toISOString().slice(0, 10);
+                        saveStorage();
+                        renderAllCards();
+                        window.open(targetUrl, '_blank');
+                    } else {
+                        showCustomAlert('辨識失敗', '剪貼簿中找不到有效的網址片段，無法自動跳轉。');
+                    }
+                } catch (err) {
+                    console.warn('Clipboard auto-read failed:', err);
+                    showCustomAlert('無法自動讀取', '您的瀏覽器環境可能阻擋了自動讀取剪貼簿，請先手動點擊「貼上連結」。');
+                }
             }
+        }
+
+        // 【一鍵複製】複製已設定好的網址
+        async function handleCopyDirect(catId, linkId) {
+            const catIndex = appState.categories.findIndex(c => c.id === catId);
+            if (catIndex === -1) return;
+            const linkIndex = appState.categories[catIndex].links.findIndex(l => l.id === linkId);
+            if (linkIndex === -1) return;
+
+            const targetLink = appState.categories[catIndex].links[linkIndex];
+            if (!targetLink || !targetLink.url) return; // 無網址時不作用
+
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(targetLink.url);
+                } else {
+                    // Fallback using execCommand
+                    const textArea = document.createElement("textarea");
+                    textArea.value = targetLink.url;
+                    textArea.style.position = "fixed"; 
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                }
+                
+                // 視覺回饋
+                const btnId = `copy-${catId}-${linkId}`;
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    const originalHtml = btn.innerHTML;
+                    btn.innerHTML = `<span class="material-symbols-outlined text-[18px] text-green-600" data-icon="check">check</span>`;
+                    setTimeout(() => { btn.innerHTML = originalHtml; }, 1500);
+                }
+            } catch (err) {
+                console.error('Copy failed:', err);
+                showCustomAlert('複製失敗', '無法寫入剪貼簿，可能因瀏覽器權限受限。');
+            }
+        }
+
+        // 【單獨刪除】刪除單個連結項目
+        function handleDeleteLinkDirect(catId, linkId) {
+            const catIndex = appState.categories.findIndex(c => c.id === catId);
+            if (catIndex === -1) return;
+            const linkIndex = appState.categories[catIndex].links.findIndex(l => l.id === linkId);
+            if (linkIndex === -1) return;
+
+            const targetLink = appState.categories[catIndex].links[linkIndex];
+
+            showCustomConfirm('刪除確認', `確定要從此分類中刪除「${targetLink.label}」嗎？此動作無法復原。`, () => {
+                appState.categories[catIndex].links.splice(linkIndex, 1);
+                saveStorage();
+                renderAllCards();
+                
+                // 若當下正在編輯視窗中，一併更新編輯列表
+                if (currentEditingId === catId && !document.getElementById('edit-modal').classList.contains('hidden')) {
+                    openCategoryEditor(catId);
+                }
+            });
         }
 
         // ==========================================
@@ -615,13 +718,24 @@
                     const activeBg = link.bg || 'bg-primary';
                     const clicks = link.clickCount !== undefined ? link.clickCount : 0;
                     const dateStr = link.updatedAt || '無';
+                    const hasUrl = !!link.url;
                     
                     linksHtml += `
                     <div class="space-y-2 border-b border-outline-variant/10 pb-3.5 last:border-none last:pb-0">
                         <div class="flex flex-col">
                             <div class="flex items-center gap-2 ${activeColor}">
                                 <span class="material-symbols-outlined text-[19px]" data-icon="link">link</span>
-                                <span class="font-subheadline font-semibold text-subheadline truncate max-w-[85%]">${link.label}</span>
+                                <span class="font-subheadline font-semibold text-subheadline truncate max-w-[85%] flex-1">${link.label}</span>
+                                
+                                <!-- 微型控制圖標 (複製 & 刪除) -->
+                                <div class="flex gap-1 ml-auto">
+                                    <button onclick="handleCopyDirect('${cat.id}', '${link.id}')" id="copy-${cat.id}-${link.id}" class="p-1 rounded-md active-scale transition-colors ${hasUrl ? 'text-outline hover:text-primary hover:bg-primary/10' : 'text-outline/30 cursor-not-allowed'}" ${hasUrl ? '' : 'disabled'}>
+                                        <span class="material-symbols-outlined text-[18px]" data-icon="content_copy">content_copy</span>
+                                    </button>
+                                    <button onclick="handleDeleteLinkDirect('${cat.id}', '${link.id}')" class="p-1 rounded-md active-scale transition-colors text-outline hover:text-error hover:bg-error/10">
+                                        <span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+                                    </button>
+                                </div>
                             </div>
                             <div class="text-[12px] text-outline pl-7 mt-0.5 font-medium">
                                 點擊：${clicks} 次 &nbsp;|&nbsp; 更新：${dateStr}
@@ -630,11 +744,12 @@
                         <div class="flex gap-2">
                             <button id="paste-${cat.id}-${link.id}" onclick="handlePasteDirect('${cat.id}', '${link.id}')" class="flex-1 bg-surface-container-low ${activeColor} font-subheadline font-semibold py-2 rounded-lg border ${activeBorder} active-scale flex items-center justify-center gap-1 transition-all outline-none">
                                 <span class="material-symbols-outlined text-[18px]" data-icon="content_paste">content_paste</span>
-                                ${link.url ? '更新連結' : '貼上連結'}
+                                ${hasUrl ? '更新連結' : '貼上連結'}
                             </button>
-                            <button onclick="handleGoDirect('${cat.id}', '${link.id}')" class="flex-1 ${link.url ? activeBg : 'bg-neutral-400/40 cursor-not-allowed'} text-white font-subheadline font-semibold py-2 rounded-lg active-scale flex items-center justify-center gap-1 shadow-sm transition-all outline-none">
-                                <span class="material-symbols-outlined text-[18px]" data-icon="open_in_new">open_in_new</span>
-                                前往連結
+                            <!-- 即使無網址也保持可點擊狀態，用以觸發智慧合併讀取 -->
+                            <button onclick="handleGoDirect('${cat.id}', '${link.id}')" class="flex-1 ${hasUrl ? activeBg : 'bg-surface-container-highest text-on-surface-variant border border-outline-variant/30'} text-white font-subheadline font-semibold py-2 rounded-lg active-scale flex items-center justify-center gap-1 shadow-sm transition-all outline-none">
+                                <span class="material-symbols-outlined text-[18px]" data-icon="${hasUrl ? 'open_in_new' : 'bolt'}">${hasUrl ? 'open_in_new' : 'bolt'}</span>
+                                ${hasUrl ? '前往連結' : '一鍵直達'}
                             </button>
                         </div>
                     </div>
