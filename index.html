@@ -379,20 +379,30 @@
         // 備份機制：JSON 資料匯出與匯入功能
         // ==========================================
         function exportDataToJson() {
-            try {
-                const dataStr = JSON.stringify(appState.categories, null, 2);
-                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-                
-                const exportFileDefaultName = `linkmanager_backup_${new Date().toISOString().slice(0,10)}.json`;
-                
-                const linkElement = document.createElement('a');
-                linkElement.setAttribute('href', dataUri);
-                linkElement.setAttribute('download', exportFileDefaultName);
-                linkElement.click();
-            } catch (err) {
-                showCustomAlert('匯出失敗', '封裝 JSON 檔案時發生未知錯誤。');
-            }
-        }
+    try {
+        const dataStr = JSON.stringify(appState.categories, null, 2);
+        // 使用 Blob 替代舊版的 Data URI，相容性更高
+        const blob = new Blob([dataStr], { type: 'application/json;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
+        const exportFileDefaultName = `linkmanager_backup_${new Date().toISOString().slice(0,10)}.json`;
+        
+        const linkElement = document.createElement('a');
+        linkElement.href = url;
+        linkElement.download = exportFileDefaultName;
+        document.body.appendChild(linkElement);
+        linkElement.click();
+        
+        // 延遲釋放 URL 記憶體
+        setTimeout(() => {
+            document.body.removeChild(linkElement);
+            URL.revokeObjectURL(url);
+        }, 100);
+    } catch (err) {
+        console.error(err);
+        showCustomAlert('匯出失敗', '封裝 JSON 檔案時發生錯誤。');
+    }
+}
 
         function importDataFromJson(event) {
             const input = event.target;
@@ -533,8 +543,6 @@
     if (linkIndex === -1) return;
     
     const targetLink = appState.categories[catIndex].links[linkIndex];
-
-    // 取得要跳轉的網址
     let targetUrl = '';
 
     if (targetLink && targetLink.url && /^https?:\/\//i.test(targetLink.url)) {
@@ -543,7 +551,6 @@
         renderAllCards();
         targetUrl = targetLink.url;
     } else {
-        // 無網址：自動觸發剪貼簿讀取
         try {
             let pastedText = '';
             if (navigator.clipboard && navigator.clipboard.readText) {
@@ -581,12 +588,14 @@
         }
     }
 
-    // ==========================================
-    // 關鍵解決方案：採用當前頁面跳轉，解決殘留新視窗問題
-    // ==========================================
     if (targetUrl) {
-        // 做法：使用當前視窗載入，不另開 _blank 視窗
-        window.location.href = targetUrl;
+        // 使用動態建立 a 標籤在原分頁開啟，避免開啟 _blank 新視窗
+        const tempLink = document.createElement('a');
+        tempLink.href = targetUrl;
+        tempLink.rel = 'noopener noreferrer';
+        document.body.appendChild(tempLink);
+        tempLink.click();
+        document.body.removeChild(tempLink);
     }
 }
 
