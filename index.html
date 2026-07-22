@@ -526,60 +526,69 @@
         }
 
         async function handleGoDirect(catId, linkId) {
-            const catIndex = appState.categories.findIndex(c => c.id === catId);
-            if (catIndex === -1) return;
-            
-            const linkIndex = appState.categories[catIndex].links.findIndex(l => l.id === linkId);
-            if (linkIndex === -1) return;
-            
-            const targetLink = appState.categories[catIndex].links[linkIndex];
+    const catIndex = appState.categories.findIndex(c => c.id === catId);
+    if (catIndex === -1) return;
+    
+    const linkIndex = appState.categories[catIndex].links.findIndex(l => l.id === linkId);
+    if (linkIndex === -1) return;
+    
+    const targetLink = appState.categories[catIndex].links[linkIndex];
 
-            // 已有網址：直接打開並計數
-            if (targetLink && targetLink.url && /^https?:\/\//i.test(targetLink.url)) {
-                appState.categories[catIndex].links[linkIndex].clickCount = (appState.categories[catIndex].links[linkIndex].clickCount || 0) + 1;
-                saveStorage();
-                renderAllCards();
-                window.open(targetLink.url, '_blank');
+    // 取得要跳轉的網址
+    let targetUrl = '';
+
+    if (targetLink && targetLink.url && /^https?:\/\//i.test(targetLink.url)) {
+        appState.categories[catIndex].links[linkIndex].clickCount = (appState.categories[catIndex].links[linkIndex].clickCount || 0) + 1;
+        saveStorage();
+        renderAllCards();
+        targetUrl = targetLink.url;
+    } else {
+        // 無網址：自動觸發剪貼簿讀取
+        try {
+            let pastedText = '';
+            if (navigator.clipboard && navigator.clipboard.readText) {
+                pastedText = await navigator.clipboard.readText();
             } else {
-                // 無網址：自動觸發剪貼簿讀取 (純無痕捷徑，不寫入 LocalStorage)
-                try {
-                    let pastedText = '';
-                    if (navigator.clipboard && navigator.clipboard.readText) {
-                        pastedText = await navigator.clipboard.readText();
-                    } else {
-                        throw new Error('Clipboard API blocked or unavailable');
-                    }
+                throw new Error('Clipboard API blocked or unavailable');
+            }
 
-                    if (!pastedText) {
-                        showCustomAlert('提示', '剪貼簿目前為空。');
-                        return;
-                    }
+            if (!pastedText) {
+                showCustomAlert('提示', '剪貼簿目前為空。');
+                return;
+            }
 
-                    const strictUrlRegex = /(https?:\/\/[^\s\u4e00-\u9fa5]+)/i;
-                    const match = pastedText.match(strictUrlRegex);
-                    
-                    let targetUrl = '';
-                    if (match) {
-                        targetUrl = match[0].trim();
-                    } else {
-                        const looseUrlRegex = /([a-zA-Z0-9-]+\.[a-zA-Z0-9-]+[^\s\u4e00-\u9fa5]*)/i;
-                        const looseMatch = pastedText.match(looseUrlRegex);
-                        if (looseMatch) {
-                            targetUrl = 'https://' + looseMatch[0].trim();
-                        }
-                    }
-
-                    if (targetUrl) {
-                        window.open(targetUrl, '_blank');
-                    } else {
-                        showCustomAlert('辨識失敗', '剪貼簿中找不到有效的網址片段，無法自動跳轉。');
-                    }
-                } catch (err) {
-                    console.warn('Clipboard auto-read failed:', err);
-                    showCustomAlert('無法自動讀取', '您的瀏覽器環境可能阻擋了自動讀取剪貼簿，請先手動點擊「貼上連結」。');
+            const strictUrlRegex = /(https?:\/\/[^\s\u4e00-\u9fa5]+)/i;
+            const match = pastedText.match(strictUrlRegex);
+            
+            if (match) {
+                targetUrl = match[0].trim();
+            } else {
+                const looseUrlRegex = /([a-zA-Z0-9-]+\.[a-zA-Z0-9-]+[^\s\u4e00-\u9fa5]*)/i;
+                const looseMatch = pastedText.match(looseUrlRegex);
+                if (looseMatch) {
+                    targetUrl = 'https://' + looseMatch[0].trim();
                 }
             }
+
+            if (!targetUrl) {
+                showCustomAlert('辨識失敗', '剪貼簿中找不到有效的網址片段，無法自動跳轉。');
+                return;
+            }
+        } catch (err) {
+            console.warn('Clipboard auto-read failed:', err);
+            showCustomAlert('無法自動讀取', '您的瀏覽器環境可能阻擋了自動讀取剪貼簿，請先手動點擊「貼上連結」。');
+            return;
         }
+    }
+
+    // ==========================================
+    // 關鍵解決方案：採用當前頁面跳轉，解決殘留新視窗問題
+    // ==========================================
+    if (targetUrl) {
+        // 做法：使用當前視窗載入，不另開 _blank 視窗
+        window.location.href = targetUrl;
+    }
+}
 
         async function handleCopyDirect(catId, linkId) {
             const catIndex = appState.categories.findIndex(c => c.id === catId);
